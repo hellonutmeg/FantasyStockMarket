@@ -9,23 +9,76 @@ function($stateProvider, $urlRouterProvider) {
     .state('home', {
       url: '/home',
       templateUrl: '/home.html',
-      controller: 'MainCtrl',
+      controller: 'StocksCtrl',
       resolve: {
-        postPromise: ['posts', function(posts){
-          return posts.getAll();
+        postPromise: ['stocks', function(stocks){
+          return stocks.getEnabled();
         }]
       }
     })
-    .state('posts', {
-      url: '/posts/{id}',
-      templateUrl: '/posts.html',
-      controller: 'PostsCtrl',
-      resolve: {
-        post: ['$stateParams', 'posts', function($stateParams, posts) {
-          return posts.get($stateParams.id);
-        }]
-      }
+    .state('allStocks', {
+        url: '/allStocks',
+        templateUrl: '/allStocks.html',
+        controller: 'StocksCtrl',
+        resolve: {
+            postPromise: ['stocks', function(stocks){
+                return allStocks.getAll();
+            }]
+        }
     })
+    .state('myTrades', {
+        url: '/myTrades',
+        templateUrl: '/myTrades.html',
+        controller: 'MyTradesCtrl',
+        resolve: {
+            postPromise: ['myTrades', function(myTrades){
+                return myTrades.getAll();
+            }]
+        }
+    })
+    .state('allTrades', {
+        url: '/allTrades',
+        templateUrl: '/allTrades.html',
+        controller: 'AllTradesCtrl',
+        resolve: {
+            postPromise: ['allTrades', function(allTrades){
+                return allTrades.getAll();
+            }]
+        }
+    })
+
+    .state('myHoldings', {
+        url: '/myHoldings',
+        templateUrl: '/myHoldings.html',
+        controller: 'MyHoldingsCtrl',
+        resolve: {
+            postPromise: ['myHoldings', function(myHoldings){
+                return myHoldings.getAll();
+            }]
+        }
+    })
+
+    .state('allHoldings', {
+        url: '/allHoldings',
+        templateUrl: '/allHoldings.html',
+        controller: 'AllHoldingsCtrl',
+        resolve: {
+            postPromise: ['allHoldings', function(allHoldings){
+                return allHoldings.getAll();
+            }]
+        }
+    })
+
+      //  .state('trades', {
+  //    url: '/posts/{id}',
+  //    templateUrl: '/posts.html',
+  //    controller: 'PostsCtrl',
+  //    resolve: {
+  //      post: ['$stateParams', 'posts', function($stateParams, posts) {
+  //        return posts.get($stateParams.id);
+  //      }]
+  //    }
+  //  })
     .state('login', {
       url: '/login',
       templateUrl: '/login.html',
@@ -45,57 +98,56 @@ function($stateProvider, $urlRouterProvider) {
         if(auth.isLoggedIn()){
           $state.go('home');
         }
-
       }]
     });
 
   $urlRouterProvider.otherwise('home');
 }])
-.factory('posts', ['$http', 'auth', function($http, auth){
+.factory('stocks', ['$http', 'auth', function($http, auth){
   var o = {
-    posts: []
+    stocks: []
   };
 
   o.get = function(id) {
-    return $http.get('/posts/' + id).then(function(res){
+    return $http.get('/stocks/' + id).then(function(res){
       return res.data;
     });
   };
 
   o.getAll = function() {
-    return $http.get('/posts').success(function(data){
-      angular.copy(data, o.posts);
+    return $http.get('/stocks').success(function(data){
+      angular.copy(data, o.stocks);
     });
   };
 
-  o.create = function(post) {
-    return $http.post('/posts', post, {
+  o.getEnabled = function() {
+      return $http.get('/stocks').success(function(data){
+          angular.copy(data, o.stocks);
+      });
+  };
+
+  o.create = function(stock) {
+    return $http.post('/stocks', stock, {
       headers: {Authorization: 'Bearer '+auth.getToken()}
     }).success(function(data){
-      o.posts.push(data);
+      o.stocks.push(data);
     });
   };
 
-  o.upvote = function(post) {
-    return $http.put('/posts/' + post._id + '/upvote', null, {
+  o.enableStock = function(stock, true) {
+    return $http.put('/stocks/' + stock.id + '/enable', {
       headers: {Authorization: 'Bearer '+auth.getToken()}
     }).success(function(data){
-      post.upvotes += 1;
+      stock.enabled = true;
     });
   };
 
-  o.addComment = function(id, comment) {
-    return $http.post('/posts/' + id + '/comments', comment, {
-      headers: {Authorization: 'Bearer '+auth.getToken()}
-    });
-  };
-
-  o.upvoteComment = function(post, comment) {
-    return $http.put('/posts/' + post._id + '/comments/'+ comment._id + '/upvote', {
-      headers: {Authorization: 'Bearer '+auth.getToken()}
-    }).success(function(data){
-      comment.upvotes += 1;
-    });
+  o.disableStock = function(stock, false) {
+      return $http.put('/stocks/' + stock.id + '/disable', {
+          headers: {Authorization: 'Bearer '+auth.getToken()}
+      }).success(function(data){
+          stock.enabled = false;
+      });
   };
 
   return o;
@@ -103,10 +155,10 @@ function($stateProvider, $urlRouterProvider) {
 .factory('auth', ['$http', '$window', '$rootScope', function($http, $window, $rootScope){
    var auth = {
     saveToken: function (token){
-      $window.localStorage['flapper-news-token'] = token;
+      $window.localStorage['fantasy-stock-market'] = token;
     },
     getToken: function (){
-      return $window.localStorage['flapper-news-token'];
+      return $window.localStorage['fantasy-stock-market'];
     },
     isLoggedIn: function(){
       var token = auth.getToken();
@@ -147,53 +199,62 @@ function($stateProvider, $urlRouterProvider) {
 
   return auth;
 }])
-.controller('MainCtrl', [
+.controller('TradesCtrl', [
 '$scope',
-'posts',
+'trades',
 'auth',
-function($scope, posts, auth){
-  $scope.test = 'Hello world!';
-
-  $scope.posts = posts.posts;
+function($scope, trades, auth){
+  $scope.trades = trades.trades;
   $scope.isLoggedIn = auth.isLoggedIn;
 
-  $scope.addPost = function(){
-    if($scope.title === '') { return; }
-    posts.create({
-      title: $scope.title,
-      link: $scope.link,
+  $scope.addTrade= function(){
+    if($scope.transaction === '') { return; }
+    if($scope.stock === '') { return; }
+    if($scope.quantity === '' && $scope.value === '') { return; }
+
+    trades.create({
+      transaction: $scope.transaction,
+      stockId: $scope.stockId,
+      price: $scope.price,
+      quantity: $scope.quantity,
+      value: $scope.value
     });
-    $scope.title = '';
-    $scope.link = '';
+    $scope.transaction = '';
+    $scope.stockId = '';
+    $scope.price = '';
+    $scope.quantity = '';
+    $scope.value = '';
   };
-
-  $scope.incrementUpvotes = function(post) {
-    posts.upvote(post);
-  };
-
 }])
-.controller('PostsCtrl', [
+.controller('StocksCtrl', [
 '$scope',
-'posts',
-'post',
+'stocks',
+'stock',
 'auth',
-function($scope, posts, post, auth){
-  $scope.post = post;
+function($scope, stocks, stock, auth){
+  $scope.stock = stock;
   $scope.isLoggedIn = auth.isLoggedIn;
 
-  $scope.addComment = function(){
-    if($scope.body === '') { return; }
-    posts.addComment(post._id, {
-      body: $scope.body,
-      author: 'user',
-    }).success(function(comment) {
-      $scope.post.comments.push(comment);
+  $scope.addStock = function(){
+    if($scope.name === '') { return; }
+    if($scope.price === '') { return; }
+    stocks.add(stock._id, {
+      name: $scope.name,
+      price: $scope.price,
+      lastUpdate: Date.now(),
+      enabled: false
+    }).success(function(stock) {
+      $scope.stocks.push(stock);
     });
-    $scope.body = '';
+    $scope.name = '';
+    $scope.price = '';
   };
 
-  $scope.incrementUpvotes = function(comment){
-    posts.upvoteComment(post, comment);
+  $scope.enable = function(stock){
+    stocks.enable(stock);
+  };
+  $scope.disable = function(stock){
+      stocks.disable(stock);
   };
 }])
 .controller('AuthCtrl', [

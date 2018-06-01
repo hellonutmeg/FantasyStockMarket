@@ -1,6 +1,6 @@
 <html>
 <head>
-  <title>Flapper News</title>
+  <title>Fantasy Stock Market</title>
 
 
   <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
@@ -12,13 +12,14 @@
 
 
 </head>
-<body ng-app="flapperNews">
+<body ng-app="fantasyStockMarket">
   <nav class="navbar navbar-default pull-right" ng-controller="NavCtrl">
     <ul class="nav navbar-nav">
       <li ng-show="isLoggedIn()"><a>{{ currentUser() }}</a></li>
       <li ng-show="isLoggedIn()"><a ng-click="logOut()">Log Out</a></li>
       <li ng-hide="isLoggedIn()"><a href="/#/login">Log In</a></li>
       <li ng-hide="isLoggedIn()"><a href="/#/register">Register</a></li>
+      <li ng-show="isLoggedIn() && isAdmin()"><a href="/#/admin/stocks">Settings</a></li>
       <li></li>
     </ul>
   </nav>
@@ -28,48 +29,47 @@
     </div>
   </div>
 
+
+  // THE STOCKS / HOME PAGE
   <script type="text/ng-template" id="/home.html">
     <div class="page-header">
-      <h1>Flapper News</h1>
+      <h1>Fantasy Stock Market</h1>
     </div>
 
-    <div ng-repeat="post in posts | orderBy:'-upvotes'">
-      <span class="glyphicon glyphicon-thumbs-up"
-        ng-click="incrementUpvotes(post)"></span>
-      {{post.upvotes}}
-      <span style="font-size:20px; margin-left:10px;">
-        <a ng-show="post.link" href="{{post.link}}">
-          {{post.title}}
-        </a>
-        <span ng-hide="post.link">
-          {{post.title}}
-        </span>
-      </span>
-      <span ng-show="post.author">
-        posted by {{post.author}} |
-      </span>
-      <span>
-        <a href="#/posts/{{post._id}}">Comments</a>
-      </span>
+    <div ng-repeat="stock in stocks | orderBy:'name'">
+      {{stock.name}}
+      {{stock.price}}
     </div>
 
-    <form ng-submit="addPost()"
+    <form ng-submit="addTrade()"
       style="margin-top:30px;" ng-show="isLoggedIn()">
-      <h3>Add a new post</h3>
+      <h3>Add a new trade</h3>
 
       <div class="form-group">
         <input type="text"
         class="form-control"
-        placeholder="Title"
-        ng-model="title"></input>
+        placeholder="Stock Name"
+        ng-model="name"></input>
+      </div>
+      <div class="form-group">
+        <input type="text"
+               class="form-control"
+               placeholder="Price"
+               ng-model="price"></input>
       </div>
       <div class="form-group">
         <input type="text"
         class="form-control"
-        placeholder="Link"
-        ng-model="link"></input>
+        placeholder="Value of Trade"
+        ng-model="value"></input>
       </div>
-      <button type="submit" class="btn btn-primary">Post</button>
+      <div class="form-group">
+        <input type="text"
+               class="form-control"
+               placeholder="Quantity of Stock"
+               ng-model="quantity"></input>
+      </div>
+      <button type="submit" class="btn btn-primary">Place Trade</button>
     </form>
 
     <div ng-hide="isLoggedIn()">
@@ -77,27 +77,17 @@
     </div>
   </script>
 
-  <script type="text/ng-template" id="/posts.html">
+  // TRADES PAGE
+  <script type="text/ng-template" id="/trades.html">
     <div class="page-header">
       <h3>
-        <a ng-show="post.link" href="{{post.link}}">
-          {{post.title}}
-        </a>
-        <span ng-hide="post.link">
-          {{post.title}}
-        </span>
+
       </h3>
     </div>
 
-    <div ng-repeat="comment in post.comments | orderBy:'-upvotes'">
-      <span class="glyphicon glyphicon-thumbs-up"
-        ng-click="incrementUpvotes(comment)"></span>
-      {{comment.upvotes}} - by <a>{{comment.author}}</a>
-      <span style="font-size:20px; margin-left:10px;">
-        {{comment.body}}
-      </span>
+    <div ng-repeat="trade in trades | orderBy:'date'">
     </div>
-    <form ng-submit="addComment()"
+    <form ng-submit="addTrade()"
       style="margin-top:30px;" ng-show="isLoggedIn()">
       <h3>Add a new comment</h3>
 
@@ -157,20 +147,36 @@
       style="margin-top:30px;">
       <h3>Register</h3>
 
-      <div class="form-group">
-        <input type="text"
-        class="form-control"
-        placeholder="Username"
-        ng-model="user.username"></input>
-      </div>
-      <div class="form-group">
-        <input type="password"
-        class="form-control"
-        placeholder="Password"
-        ng-model="user.password"></input>
-      </div>
-      <button type="submit" class="btn btn-primary">Register</button>
-    </form>
+      <form ng-submit="addTrade()"
+            style="margin-top:30px;" ng-show="isLoggedIn()">
+        <h3>Add a new trade</h3>
+
+        <div class="form-group">
+          <input type="text"
+                 class="form-control"
+                 placeholder="Stock Name"
+                 ng-model="name"></input>
+        </div>
+        <div class="form-group">
+          <input type="text"
+                 class="form-control"
+                 placeholder="Price"
+                 ng-model="price"></input>
+        </div>
+        <div class="form-group">
+          <input type="text"
+                 class="form-control"
+                 placeholder="Value of Trade"
+                 ng-model="value"></input>
+        </div>
+        <div class="form-group">
+          <input type="text"
+                 class="form-control"
+                 placeholder="Quantity of Stock"
+                 ng-model="quantity"></input>
+        </div>
+        <button type="submit" class="btn btn-primary">Place Trade</button>
+      </form>
   </script>
 </body>
 </html>

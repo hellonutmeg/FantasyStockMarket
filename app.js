@@ -17,8 +17,8 @@ promise.then(function(db) {
 });
 
 
-require('./models/Posts');
-require('./models/Comments');
+require('./models/Stocks');
+require('./models/Trades');
 require('./models/Users');
 
 require('./config/passport');

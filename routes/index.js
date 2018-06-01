@@ -10,77 +10,113 @@ router.get('/', function(req, res) {
 
 
 var mongoose = require('mongoose');
-var Post = mongoose.model('Post');
-var Comment = mongoose.model('Comment');
+var Trade = mongoose.model('Trade');
+var Stock = mongoose.model('Stock');
 var User = mongoose.model('User');
 
 var auth = jwt({secret: 'SECRET', userProperty: 'payload'});
 
-router.get('/posts', function(req, res, next) {
-  Post.find(function(err, posts){
+// get all stocks
+router.get('/stocks', function(req, res, next) {
+  Post.find(function(err, stocks){
     if(err){ return next(err); }
 
-    res.json(posts);
+    res.json(stocks);
   });
 });
 
-router.post('/posts', auth, function(req, res, next) {
-  var post = new Post(req.body);
-  post.author = req.payload.username;
+// create a new stock item
+// RALC - note this will ultimately only be done via a REST api retrieving a list of stocks
+router.post('/stocks', auth, function(req, res, next) {
+  var stock = new Stock(req.body);
 
   post.save(function(err, post){
     if(err){ return next(err); }
 
-    res.json(post);
+    res.json(stock);
   });
 });
 
-
-// Preload post objects on routes with ':post'
-router.param('post', function(req, res, next, id) {
-  var query = Post.findById(id);
+// retrieve a specific stock item
+// Preload stock objects on routes with ':stock'
+router.param('stock', function(req, res, next, id) {
+  var query = Stock.findById(id);
 
   query.exec(function (err, post){
     if (err) { return next(err); }
-    if (!post) { return next(new Error("can't find post")); }
+    if (!stock) { return next(new Error("can't find stock")); }
 
-    req.post = post;
+    req.stock = stock;
     return next();
   });
 });
 
-// Preload comment objects on routes with ':comment'
-router.param('comment', function(req, res, next, id) {
-  var query = Comment.findById(id);
+// update a stock item status to enabled (ie not included in the game)
+// RALC - need to ensure that this is only accessible by admin users
+router.put('/admin/stocks/:stock/enable', auth, function(req, res, next) {
+    req.stock.enable(function(err, stock){
+        if (err) { return next(err); }
 
-  query.exec(function (err, comment){
+        res.json(stock);
+    });
+});
+
+// update a stock item status to disabled (ie not included in the game)
+// RALC - need to ensure that this is only accessible by admin users
+router.put('/admin/stocks/:stock/disable', auth, function(req, res, next) {
+    req.stock.disable(function(err, stock){
+        if (err) { return next(err); }
+
+        res.json(stock);
+    });
+});
+
+// get users trades
+// RALC - need to add something here to only return trades where trader = logged in user
+router.get('/trades', function(req, res, next) {
+    Trade.find(function(err, trades){
+        if(err){ return next(err); }
+
+        res.json(trades);
+    });
+});
+
+// get all trades (admin only)
+// RALC - need to add something here to ensure user is an admin
+router.get('/admin/trades', function(req, res, next) {
+    Trade.find(function(err, trades){
+        if(err){ return next(err); }
+
+        res.json(trades);
+    });
+});
+
+// post a new trade
+router.post('/trades', auth, function(req, res, next) {
+    var trade = new Trade(req.body);
+
+    trade.trader = req.payload.username;
+
+    trade.save(function(err, trade){
+      if(err){ return next(err); }
+      res.json(trade);
+    });
+});
+
+// Preload trade objects on routes with trade:
+router.param('trade', function(req, res, next, id) {
+  var query = Trade.findById(id);
+
+  query.exec(function (err, trade){
     if (err) { return next(err); }
-    if (!comment) { return next(new Error("can't find comment")); }
+    if (!trade) { return next(new Error("can't find trade")); }
 
-    req.comment = comment;
+    req.trade= trade;
     return next();
   });
 });
 
-
-// return a post
-router.get('/posts/:post', function(req, res, next) {
-  req.post.populate('comments', function(err, post) {
-    res.json(post);
-  });
-});
-
-
-// upvote a post
-router.put('/posts/:post/upvote', auth, function(req, res, next) {
-  req.post.upvote(function(err, post){
-    if (err) { return next(err); }
-
-    res.json(post);
-  });
-});
-
-
+/*
 // create a new comment
 router.post('/posts/:post/comments', auth, function(req, res, next) {
   var comment = new Comment(req.body);
@@ -116,7 +152,7 @@ router.put('/posts/:post/comments/:comment/upvote', auth, function(req, res, nex
     res.json(comment);
   });
 });
-
+*/
 
 router.post('/login', function(req, res, next){
   if(!req.body.username || !req.body.password){
